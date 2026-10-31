@@ -4,10 +4,12 @@ import com.example.expense.expense.Expense;
 import com.example.expense.expense.ExpenseRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Component("expenseSecurity")
+@Transactional(readOnly = true)
 public class ExpenseSecurity {
 
     private final ExpenseRepository expenses;
