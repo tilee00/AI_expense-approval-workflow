@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -26,6 +27,17 @@ public class ApiExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     ResponseEntity<ApiError> conflict(ConflictException exception, HttpServletRequest request) {
         return build(HttpStatus.CONFLICT, "Conflict", exception.getMessage(), request);
+    }
+
+    /**
+     * Thrown while a transaction commits, after the service method returns, so
+     * it cannot be handled inside the service. Two callers decided the same
+     * expense at once; the loser gets 409, not a 500.
+     */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    ResponseEntity<ApiError> concurrentModification(HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, "Conflict",
+                "The expense was modified by someone else; reload and retry", request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
