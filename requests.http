@@ -1,0 +1,102 @@
+@host = http://localhost:8080
+
+### Login as alice (EMPLOYEE)
+# @name alice
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{"username":"alice","password":"password123"}
+
+### Login as bob (MANAGER)
+# @name bob
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{"username":"bob","password":"password123"}
+
+### Login as carol (FINANCE)
+# @name carol
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{"username":"carol","password":"password123"}
+
+### Login as dave (ADMIN)
+# @name dave
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{"username":"dave","password":"password123"}
+
+### Who am I? (alice)
+GET {{host}}/api/auth/me
+Authorization: Bearer {{alice.response.body.$.token}}
+
+### Alice lists only her own expenses
+GET {{host}}/api/expenses/mine
+Authorization: Bearer {{alice.response.body.$.token}}
+
+### Alice cannot list every expense -> 403
+GET {{host}}/api/expenses
+Authorization: Bearer {{alice.response.body.$.token}}
+
+### Bob (MANAGER) can list every expense -> 200
+GET {{host}}/api/expenses
+Authorization: Bearer {{bob.response.body.$.token}}
+
+### Alice creates a draft
+# @name created
+POST {{host}}/api/expenses
+Authorization: Bearer {{alice.response.body.$.token}}
+Content-Type: application/json
+
+{"amount":25.50,"currency":"EUR","description":"Taxi home"}
+
+### Alice submits her draft
+POST {{host}}/api/expenses/{{created.response.body.$.id}}/submit
+Authorization: Bearer {{alice.response.body.$.token}}
+
+### Alice cannot approve her own claim -> 403
+POST {{host}}/api/expenses/{{created.response.body.$.id}}/approve
+Authorization: Bearer {{alice.response.body.$.token}}
+
+### Bob approves the submitted claim -> 200
+POST {{host}}/api/expenses/{{created.response.body.$.id}}/approve
+Authorization: Bearer {{bob.response.body.$.token}}
+
+### Bob cannot pay it (only FINANCE or ADMIN) -> 403
+POST {{host}}/api/expenses/{{created.response.body.$.id}}/pay
+Authorization: Bearer {{bob.response.body.$.token}}
+
+### Carol pays the approved claim -> 200
+POST {{host}}/api/expenses/{{created.response.body.$.id}}/pay
+Authorization: Bearer {{carol.response.body.$.token}}
+
+### Paying it again -> 409 Conflict
+POST {{host}}/api/expenses/{{created.response.body.$.id}}/pay
+Authorization: Bearer {{carol.response.body.$.token}}
+
+### Bob can read but not edit alice's draft -> 403
+PUT {{host}}/api/expenses/1
+Authorization: Bearer {{bob.response.body.$.token}}
+Content-Type: application/json
+
+{"amount":1.00,"currency":"EUR","description":"Rewritten by a manager"}
+
+### Alice edits her own draft -> 200
+PUT {{host}}/api/expenses/2
+Authorization: Bearer {{alice.response.body.$.token}}
+Content-Type: application/json
+
+{"amount":130.00,"currency":"EUR","description":"Team lunch (updated)"}
+
+### Dave (ADMIN) lists users -> 200
+GET {{host}}/api/admin/users
+Authorization: Bearer {{dave.response.body.$.token}}
+
+### Alice cannot list users -> 403
+GET {{host}}/api/admin/users
+Authorization: Bearer {{alice.response.body.$.token}}
+
+### No token at all -> 401
+GET {{host}}/api/expenses/mine
