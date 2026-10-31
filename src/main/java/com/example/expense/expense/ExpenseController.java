@@ -64,4 +64,24 @@ public class ExpenseController {
     void delete(@PathVariable Long id) {
         expenseService.delete(id);
     }
+
+    @PostMapping("/{id}/submit")
+    ExpenseResponse submit(@PathVariable Long id) {
+        return expenseService.submit(id);
+    }
+
+    @PostMapping("/{id}/approve")
+    ExpenseResponse approve(@PathVariable Long id, Authentication authentication) {
+        return expenseService.approve(id, authentication);
+    }
+
+    @PostMapping("/{id}/reject")
+    ExpenseResponse reject(@PathVariable Long id, Authentication authentication) {
+        return expenseService.reject(id, authentication);
+    }
+
+    @PostMapping("/{id}/pay")
+    ExpenseResponse pay(@PathVariable Long id) {
+        return expenseService.pay(id);
+    }
 }

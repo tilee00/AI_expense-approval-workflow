@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -67,6 +68,44 @@ public class ExpenseService {
         Expense expense = find(id);
         requireStatus(expense, ExpenseStatus.DRAFT);
         expenses.delete(expense);
+    }
+
+    @PreAuthorize("@expenseSecurity.isOwner(#id, authentication)")
+    public ExpenseResponse submit(Long id) {
+        Expense expense = find(id);
+        requireStatus(expense, ExpenseStatus.DRAFT);
+        expense.setStatus(ExpenseStatus.SUBMITTED);
+        expense.setSubmittedAt(Instant.now());
+        return ExpenseResponse.from(expense);
+    }
+
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public ExpenseResponse approve(Long id, Authentication authentication) {
+        Expense expense = find(id);
+        requireStatus(expense, ExpenseStatus.SUBMITTED);
+        expense.setStatus(ExpenseStatus.APPROVED);
+        expense.setDecidedAt(Instant.now());
+        expense.setDecidedBy(currentUser(authentication));
+        return ExpenseResponse.from(expense);
+    }
+
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public ExpenseResponse reject(Long id, Authentication authentication) {
+        Expense expense = find(id);
+        requireStatus(expense, ExpenseStatus.SUBMITTED);
+        expense.setStatus(ExpenseStatus.REJECTED);
+        expense.setDecidedAt(Instant.now());
+        expense.setDecidedBy(currentUser(authentication));
+        return ExpenseResponse.from(expense);
+    }
+
+    @PreAuthorize("hasAnyRole('FINANCE','ADMIN')")
+    public ExpenseResponse pay(Long id) {
+        Expense expense = find(id);
+        requireStatus(expense, ExpenseStatus.APPROVED);
+        expense.setStatus(ExpenseStatus.PAID);
+        expense.setPaidAt(Instant.now());
+        return ExpenseResponse.from(expense);
     }
 
     private Expense find(Long id) {
