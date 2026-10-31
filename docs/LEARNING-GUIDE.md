@@ -168,6 +168,25 @@ from your logs.
 Tests: `approvingTwiceReturns409`, `payingBeforeApprovalReturns409`,
 `payingRejectedExpenseReturns409`.
 
+## Two managers approve at the same moment
+
+`requireStatus` reads the row and then writes it. On its own, that check is not
+enough: two requests can both read `SUBMITTED`, both pass the check, and both
+commit — two `200`s and a claim decided twice.
+
+`Expense` carries a `@Version` column, so Hibernate writes
+`UPDATE expenses SET ... WHERE id = ? AND version = ?`. Only one of the two
+updates matches. The loser's transaction fails at commit with
+`ObjectOptimisticLockingFailureException`, which the exception handler turns
+into the same `409 Conflict` a late sequential call receives.
+
+Note where that failure happens: while the transaction commits, after
+`approve()` has returned. It cannot be caught inside the service method, which
+is why the mapping lives in `ApiExceptionHandler`.
+
+Tests: `ExpenseVersioningTest` (two transactions, exactly one winner) and
+`OptimisticLockConflictTest` (the loser gets `409`, not `500`).
+
 ## Why a missing expense is 403, not 404
 
 `canView`, `canEdit` and `isOwner` return `false` when the row does not exist.

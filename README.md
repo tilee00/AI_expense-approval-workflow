@@ -27,7 +27,7 @@ The API starts on `http://localhost:8080`. Stop it with `Ctrl+C`.
 | `alice` | `password123` | EMPLOYEE | Create, edit, delete and submit her own drafts |
 | `bob` | `password123` | MANAGER | See every expense, approve or reject submitted ones |
 | `carol` | `password123` | FINANCE | See every expense, pay approved ones |
-| `dave` | `password123` | ADMIN | Everything, including listing users |
+| `dave` | `password123` | ADMIN | See every expense, approve or reject, pay, and list users — but cannot edit, delete, or submit someone else's claim |
 
 Seeded expenses: two drafts, one submitted, one approved, one paid — all owned
 by alice. They exist so you can try every transition immediately.
@@ -68,9 +68,9 @@ the requests that return `403`.
 .\gradlew.bat test
 ```
 
-54 tests. They cover the happy path, every forbidden case, the invalid inputs,
-the illegal state transitions, and one run with no test transaction — the way
-the real application behaves.
+56 tests. They cover the happy path, the forbidden cases, the invalid inputs,
+the illegal state transitions, two writers racing the same claim, and one run
+with no test transaction — the way the real application behaves.
 
 ## Where things live
 
@@ -89,6 +89,8 @@ src/test/java/com/example/expense/
   ExpenseAuthorizationTest.java   who may do what, plus validation
   ExpenseStateTest.java           legal and illegal transitions
   AdminUserTest.java              the admin-only endpoint
+  ExpenseVersioningTest.java      two concurrent writers, one winner
+  OptimisticLockConflictTest.java the losing writer gets 409, not 500
   ExpenseWithoutTestTransactionTest.java  the same code path without a test transaction
 ```
 
