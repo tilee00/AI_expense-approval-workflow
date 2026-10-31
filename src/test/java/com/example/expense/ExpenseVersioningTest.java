@@ -9,6 +9,7 @@ import com.example.expense.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -64,7 +65,7 @@ class ExpenseVersioningTest {
                         expense.setStatus(ExpenseStatus.APPROVED);
                     });
                     return true;
-                } catch (RuntimeException conflict) {
+                } catch (OptimisticLockingFailureException lostRace) {
                     return false;
                 }
             };
